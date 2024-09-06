@@ -1,7 +1,5 @@
 #!/bin/bash
 # shellcheck shell=bash
-# shellcheck disable=SC1091
-# shellcheck disable=SC2154
 PATH=${PATH}:/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin:/opt/homebrew/bin
 export PATH
 #
@@ -17,7 +15,7 @@ export PATH
 #
 # Copyright (c) 2024 DDSRem <https://blog.ddsrem.com>
 #
-# This is free software, licensed under the Mit License.
+# This is free software, licensed under the GNU General Public License v3.0.
 #
 # ——————————————————————————————————————————————————————————————————————————————————
 #
@@ -44,6 +42,16 @@ function WARN() {
     echo -e "${WARN} ${1}"
 }
 
+function sedsh() {
+
+    if [[ "$(uname -s)" = "Darwin" ]]; then
+        sed -i '' "$@"
+    else
+        sed -i "$@"
+    fi
+
+}
+
 function get_dev_dri() {
 
     if [ "${dev_dri}" == "no" ]; then
@@ -66,7 +74,7 @@ function set_dev_dri() {
         new_dev_dri=no
     fi
 
-    sed -i "s/dev_dri=.*/dev_dri=${new_dev_dri}/" "${config_dir}/emby_config.txt"
+    sedsh "s/dev_dri=.*/dev_dri=${new_dev_dri}/" "${config_dir}/emby_config.txt"
 
 }
 
@@ -80,7 +88,7 @@ function set_mode() {
         new_mode=host
     fi
 
-    sed -i "s/mode=.*/mode=${new_mode}/" "${config_dir}/emby_config.txt"
+    sedsh "s/mode=.*/mode=${new_mode}/" "${config_dir}/emby_config.txt"
 
 }
 
@@ -94,7 +102,7 @@ function set_image() {
         new_image=emby
     fi
 
-    sed -i "s/image=.*/image=${new_image}/" "${config_dir}/emby_config.txt"
+    sedsh "s/image=.*/image=${new_image}/" "${config_dir}/emby_config.txt"
 
 }
 
@@ -108,7 +116,7 @@ function set_version() {
         new_version=4.8.0.56
     fi
 
-    sed -i "s/version=.*/version=${new_version}/" "${config_dir}/emby_config.txt"
+    sedsh "s/version=.*/version=${new_version}/" "${config_dir}/emby_config.txt"
 
 }
 
@@ -119,12 +127,12 @@ function get_media_dir() {
         INFO "已读取媒体库目录：${OLD_MEDIA_DIR} (默认不更改回车继续，如果需要更改请输入新路径)"
         read -erp "MEDIA_DIR:" MEDIA_DIR
         [[ -z "${MEDIA_DIR}" ]] && MEDIA_DIR=${OLD_MEDIA_DIR}
-        sed -i "s#media_dir=.*#media_dir=${MEDIA_DIR}#" "${config_dir}/emby_config.txt"
+        sedsh "s#media_dir=.*#media_dir=${MEDIA_DIR}#" "${config_dir}/emby_config.txt"
     else
         INFO "请输入媒体库目录（默认 /media ）"
         read -erp "MEDIA_DIR:" MEDIA_DIR
         [[ -z "${MEDIA_DIR}" ]] && MEDIA_DIR="/media"
-        sed -i "s#media_dir=.*#media_dir=${MEDIA_DIR}#" "${config_dir}/emby_config.txt"
+        sedsh "s#media_dir=.*#media_dir=${MEDIA_DIR}#" "${config_dir}/emby_config.txt"
     fi
 
 }
@@ -151,12 +159,13 @@ function set_resilio() {
         new_resilio=no
     fi
 
-    sed -i "s/resilio=.*/resilio=${new_resilio}/" "${config_dir}/emby_config.txt"
+    sedsh "s/resilio=.*/resilio=${new_resilio}/" "${config_dir}/emby_config.txt"
 
 }
 
 function main_return() {
 
+    # shellcheck disable=SC1091
     source "${config_dir}/emby_config.txt"
 
     cat /tmp/xiaoya_alist
@@ -221,6 +230,10 @@ if [[ $EUID -ne 0 ]]; then
     exit 1
 fi
 
+if [[ "$(uname -s)" = "Darwin" ]]; then
+    stty -icanon
+fi
+
 if [ ! "$1" ]; then
     ERROR "未设置xiaoya配置目录"
     exit 1
@@ -244,6 +257,7 @@ if [ ! -s "${config_dir}/emby_config.txt" ]; then
         echo "version=4.8.0.56"
     } >> "${config_dir}/emby_config.txt"
 else
+    # shellcheck disable=SC1091
     source "${config_dir}/emby_config.txt"
     if [ -z "${dev_dri}" ]; then
         echo "dev_dri=no" >> "${config_dir}/emby_config.txt"
